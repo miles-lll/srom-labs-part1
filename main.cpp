@@ -279,6 +279,46 @@ struct BigInt {
 		}
 	}
 
+        uint32_t get_bit(size_t idx) const {
+                if (idx >= WORDS * 32) {
+                        return 0;
+                }
+
+                size_t word_idx = idx / 32;
+                size_t bit_pos  = idx % 32;
+
+                return (digits[word_idx] >> bit_pos) & 1U;
+        }
+
+	static void power(const BigInt& a, const BigInt& b, BigInt& c) {
+                c = BigInt::one();
+                size_t m = b.bit_length();
+
+                if (m == 0) {
+                        return;
+                }
+
+                for (int i = static_cast<int>(m) - 1; i >= 0; --i) {
+                        if (b.get_bit(i) == 1) {
+                                uint32_t buf[2 * WORDS];
+                                c.mul(a, buf);
+
+                                for (size_t w = 0; w < WORDS; ++w) {
+                                        c.digits[w] = buf[w];
+                                }
+                        }
+
+                        if (i != 0) {
+                                uint32_t buf[2 * WORDS];
+                                c.square(buf);
+
+                                for (size_t w = 0; w < WORDS; ++w) {
+                                        c.digits[w] = buf[w];
+                                }
+                        }
+                }
+        }
+
 	static BigInt random() {
     		static std::random_device rd;
     		static std::mt19937_64 gen(rd());
@@ -350,6 +390,14 @@ int main() {
 	BigInt q1, r1;
         a.div(a, q1, r1);
 	std::cout << "a / a (hex) = " << q1.to_hex() << "\n";
+
+	BigInt p0, p1, p2;
+        BigInt::power(a, z, p0);
+        BigInt::power(a, o, p1);
+        BigInt::power(BigInt(2), BigInt(10), p2);
+        std::cout << "\na^0 (hex) = " << p0.to_hex() << "\n";
+        std::cout << "a^1 (hex) = " << p1.to_hex() << "\n";
+        std::cout << "2^10 (hex) = " << p2.to_hex() << "\n";
 
 	return 0;
 }
