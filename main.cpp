@@ -170,6 +170,76 @@ struct BigInt {
 		mul(*this, res_words);
 	}
 
+	size_t bit_length() const {
+		int i = static_cast<int>(WORDS) - 1;
+		while (i >= 0 && digits[i] == 0) {
+			--i;
+		}
+
+		if (i < 0) {
+			return 0;
+		}
+
+		uint32_t top = digits[i];
+		size_t bits_in_top = 0;
+		while (top > 0) {
+			++bits_in_top;
+			top >>= 1;
+		}
+
+		return static_cast<size_t>(i)*32 + bits_in_top;
+	}
+
+	void shift_l(size_t k, BigInt& res) const {
+		res = BigInt::zero();
+
+		if (k >= WORDS * 32) {
+			return;
+		}
+
+		size_t word_shift = k / 32;
+		size_t bit_shift  = k % 32;
+
+		if (bit_shift == 0) {
+			for (size_t i = 0; i + word_shift < WORDS; ++i) {
+				res.digits[i + word_shift] = digits[i];
+			}
+		} else {
+			for (size_t i = 0; i + word_shift < WORDS; ++i) {
+				res.digits[i + word_shift] |= (digits[i] << bit_shift);
+
+				if (i + word_shift + 1 < WORDS) {
+					res.digits[i + word_shift + 1] |= (digits[i] >> (32 - bit_shift));
+				}
+			}
+		}
+	}
+
+	void shift_r(size_t k, BigInt& res) const {
+		res = BigInt::zero();
+
+		if (k >= WORDS * 32) {
+			return;
+		}
+
+		size_t word_shift = k / 32;
+                size_t bit_shift  = k % 32;
+
+		if (bit_shift == 0) {
+                        for (size_t i = word_shift; i < WORDS; ++i) {
+                                res.digits[i - word_shift] = digits[i];
+                        }
+                } else {
+                        for (size_t i = word_shift; i < WORDS; ++i) {
+                                res.digits[i - word_shift] |= (digits[i] >> bit_shift);
+
+                                if (i + 1 < WORDS) {
+                                        res.digits[i - word_shift] |= (digits[i+1] << (32 - bit_shift));
+                                }
+                        }
+                }
+        }
+
 	static BigInt random() {
     		static std::random_device rd;
     		static std::mt19937_64 gen(rd());
@@ -219,6 +289,19 @@ int main() {
     	std::cout << "0 cmp 1: " << z.cmp(o) << "\n";
     	std::cout << "1 cmp 0: " << o.cmp(z) << "\n";
 	std::cout << "a cmp b: " << a.cmp(b) << "\n";
+
+	BigInt max;
+	o.shift_l(2047, max);
+	std::cout << "\n1 << 2047 = " << max.bit_length() << "\n";
+
+	BigInt of;
+	o.shift_l(2048, of);
+	std::cout << "1 << 2048 = " << of.to_hex() << "\n";
+
+	BigInt sh32, res;
+	o.shift_l(32, sh32);
+	sh32.shift_r(32, res);
+	std::cout << "100000000 >> 32 = " << res.to_hex() << "\n";
 
 	return 0;
 }
