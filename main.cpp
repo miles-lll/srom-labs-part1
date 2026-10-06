@@ -240,6 +240,45 @@ struct BigInt {
                 }
         }
 
+	void div(const BigInt& b, BigInt& q, BigInt& r) const {
+		if (b.bit_length() == 0) {
+			throw std::invalid_argument("Division by zero");
+		}
+
+		q = BigInt::zero();
+		r = *this;
+
+		if (r.cmp(b) < 0) {
+			return;
+		}
+
+		BigInt one = BigInt::one();
+		size_t k = b.bit_length();
+
+		while (r.cmp(b) >= 0) {
+			size_t t = r.bit_length();
+			size_t shift = t - k;
+
+			BigInt b_shifted;
+			b.shift_l(shift, b_shifted);
+
+			if (r.cmp(b_shifted) < 0) {
+				--shift;
+				b.shift_l(shift, b_shifted);
+			}
+
+			BigInt next_r;
+			r.sub(b_shifted, next_r);
+			r = next_r;
+
+			BigInt q_term;
+			one.shift_l(shift, q_term);
+			BigInt next_q;
+			q.add(q_term, next_q);
+			q = next_q;
+		}
+	}
+
 	static BigInt random() {
     		static std::random_device rd;
     		static std::mt19937_64 gen(rd());
@@ -302,6 +341,15 @@ int main() {
 	o.shift_l(32, sh32);
 	sh32.shift_r(32, res);
 	std::cout << "100000000 >> 32 = " << res.to_hex() << "\n";
+
+	BigInt q, r;
+	a.div(b, q, r);
+	std::cout << "\na / b (hex) = " << q.to_hex() << "\n";
+	std::cout << "a mod b (hex) = " << r.to_hex() << "\n";
+
+	BigInt q1, r1;
+        a.div(a, q1, r1);
+	std::cout << "a / a (hex) = " << q1.to_hex() << "\n";
 
 	return 0;
 }
