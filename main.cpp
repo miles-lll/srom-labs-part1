@@ -94,6 +94,38 @@ struct BigInt {
 		return static_cast<uint32_t>(carry);
 	}
 
+	uint32_t sub(const BigInt& num, BigInt& res) const{
+		int64_t borrow = 0;
+
+		for (size_t i = 0; i < WORDS; ++i) {
+                        int64_t temp = static_cast<int64_t>(digits[i]) - static_cast<int64_t>(num.digits[i]) - borrow;
+
+			if (temp < 0) {
+				temp += (1LL << 32);
+				borrow = 1;
+			} else {
+				borrow = 0;
+			}
+
+			res.digits[i] = static_cast<uint32_t>(temp);
+                }
+
+                return static_cast<uint32_t>(borrow);
+	}
+
+
+	int cmp(const BigInt& num) const {
+		for (int i = static_cast<int>(WORDS) - 1; i>=0; --i) {
+			if (digits[i] > num.digits[i]) {
+				return 1;
+			}
+			if (digits[i] < num.digits[i]) {
+				return -1;
+			}
+		}
+
+		return 0;
+	}
 
 	static BigInt random() {
     		static std::random_device rd;
@@ -125,11 +157,19 @@ int main() {
 
 	BigInt a = BigInt::random();
 	BigInt b = BigInt::random();
-	BigInt sum;
-	uint32_t c = a.add(b, sum);
-	std::cout << "a = " << a.to_hex() << "\n";
+	BigInt sum, diff;
+	uint32_t carry = a.add(b, sum);
+	uint32_t borrow = a.sub(b, diff);
+
+	std::cout << "\na = " << a.to_hex() << "\n";
         std::cout << "b = " << b.to_hex() << "\n";
-	std::cout << " a + b (hex) = " << sum.to_hex() << " (carry: " << c << ")\n";
+	std::cout << " a + b (hex) = " << sum.to_hex() << " (carry: " << carry << ")\n";
+	std::cout << " a - b (hex) = " << diff.to_hex() << " (borrow: " << borrow << ")\n";
+
+	std::cout << "\na cmp a: " << a.cmp(a) << "\n";
+    	std::cout << "0 cmp 1: " << z.cmp(o) << "\n";
+    	std::cout << "1 cmp 0: " << o.cmp(z) << "\n";
+	std::cout << "a cmp b: " << a.cmp(b) << "\n";
 
 	return 0;
 }
