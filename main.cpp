@@ -166,6 +166,10 @@ struct BigInt {
 		}
 	}
 
+	void square(uint32_t res_words[2 * WORDS]) const {
+		mul(*this, res_words);
+	}
+
 	static BigInt random() {
     		static std::random_device rd;
     		static std::mt19937_64 gen(rd());
@@ -201,12 +205,15 @@ int main() {
 	uint32_t borrow = a.sub(b, diff);
 	uint32_t mul_res[2 * WORDS];
 	a.mul(b, mul_res);
+	uint32_t sq_res[2*WORDS];
+	a.square(sq_res);
 
 	std::cout << "\na = " << a.to_hex() << "\n";
         std::cout << "b = " << b.to_hex() << "\n";
 	std::cout << " a + b (hex) = " << sum.to_hex() << " (carry: " << carry << ")\n";
 	std::cout << " a - b (hex) = " << diff.to_hex() << " (borrow: " << borrow << ")\n";
-	std::cout << "a * b: " << BigInt::to_hex_adv(mul_res, 2 * WORDS) << "\n";
+	std::cout << "a * b = " << BigInt::to_hex_adv(mul_res, 2 * WORDS) << "\n";
+	std::cout << "a^2 = " << BigInt::to_hex_adv(sq_res, 2 * WORDS) << "\n";
 
 	std::cout << "\na cmp a: " << a.cmp(a) << "\n";
     	std::cout << "0 cmp 1: " << z.cmp(o) << "\n";
